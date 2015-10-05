@@ -13,53 +13,53 @@ public class Bayes {
 
 
 	public static void main(String[] args) throws IOException {
-	    train();
-	}
-	
-	private static void train() throws IOException {
-		
-		ZipFile hamTrain = new ZipFile("res/ham-anlern.zip");
-		ZipFile spamTrain = new ZipFile("res/spam-anlern.zip");
-
-		HashMap<String, Integer> wordCount = new HashMap<>();
-
-		
-	    Enumeration<? extends ZipEntry> hamEntries = hamTrain.entries();
-
-	    while(hamEntries.hasMoreElements()){
-	        ZipEntry entry = hamEntries.nextElement();
-	       // InputStream stream = hamTrain.getInputStream(entry);
-	        
-	        BufferedReader reader = new BufferedReader(new InputStreamReader(hamTrain.getInputStream(entry), "UTF-8"));
-	        
-	        
-	        String line = "";
-	        while ((line = reader.readLine()) != null) {
-	        	String[] words = line.toLowerCase().split("\\b");
-	        	for (int i = 0; i < words.length; i++) {
-	        		if (wordCount.containsKey(words[i])) { 
-        			  int n = wordCount.get(words[i]);    
-        			  wordCount.put(words[i], ++n);
-        			}
-        			else {
-        			  wordCount.put(words[i], 1);
-        			}
-	        	}
-	        	
-	            
-	        }
-	        
-	    }
+	    HashMap<String, Integer> hamWords = createWordList("res/ham-anlern.zip");
+	    HashMap<String, Integer> spamWords = createWordList("res/spam-anlern.zip");
 	    
-	    
-	    // Print Word Map
-	    for (Map.Entry entry : wordCount.entrySet()){
+	    System.out.println("---------- Ham Words --------------");
+	    for (Map.Entry entry : hamWords.entrySet()){
 	    	  System.out.println(entry.getKey() + " " + entry.getValue());
 	    }
-	    
-	    
-	    
-	    
-	    
+	    System.out.println("----------- Word Count: " + spamWords.size());
+	    System.out.println("---------- Spam Words --------------");
+	    for (Map.Entry entry : spamWords.entrySet()){
+	    	  System.out.println(entry.getKey() + " " + entry.getValue());
+	    }
+	    System.out.println("----------- Word Count: " + spamWords.size());
 	}
+	
+	/**
+	 * Creates word list of a zip file
+	 * @param zipfile path 
+	 * @return HashMap<String, Integer> -- Word, Count
+	 * @throws IOException
+	 */
+	private static HashMap<String, Integer> createWordList(String filename) throws IOException {
+		HashMap<String, Integer> wordCount = new HashMap<>();
+		ZipFile file = new ZipFile(filename);
+		Enumeration<? extends ZipEntry> zipEntries = file.entries();
+
+		while(zipEntries.hasMoreElements()){
+			ZipEntry entry = zipEntries.nextElement();
+			BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream(entry), "UTF-8"));
+
+			String line = "";
+			while ((line = reader.readLine()) != null) {
+				// String[] words = line.toLowerCase().split("\\b");
+				String[] words = line.toLowerCase().split("[^a-zA-Z]+");
+			
+				for (int i = 0; i < words.length; i++) {
+					if (wordCount.containsKey(words[i])) { 
+					  int n = wordCount.get(words[i]);    
+					  wordCount.put(words[i], ++n);
+					}
+					else {
+					  wordCount.put(words[i], 1);
+					}
+				}
+			}
+		}
+		return wordCount;
+	}
+
 }
