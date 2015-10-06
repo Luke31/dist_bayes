@@ -5,23 +5,24 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.UnsupportedEncodingException;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 public class Bayes {
 
-
-//	public static void main(String[] args) throws IOException {
-//	    train();
-//	}
-	
 	protected static HashMap<String, Integer> hamWords = null;
 	protected static HashMap<String, Integer> spamWords = null;
+	protected static int hamMailCount = 0;
+	protected static int spamMailCount = 0;
 	
 	/**
 	 * Train --> create Wordlist
@@ -30,6 +31,7 @@ public class Bayes {
 	protected static void train() throws IOException {
 		
 		File f = new File("hamwords.ser");
+		hamMailCount = countWords("res/ham-anlern.zip"); //TODO: Nur einmal laden?
 		if(!f.exists()) { 
 			hamWords = createWordList("res/ham-anlern.zip");
 			saveHashMap(hamWords, "hamwords.ser");
@@ -38,6 +40,7 @@ public class Bayes {
 		}
 		
 		f = new File("spamwords.ser");
+		spamMailCount = countWords("res/spam-anlern.zip");//TODO: Nur einmal laden?
 		if(!f.exists()) { 
 			spamWords = createWordList("res/spam-anlern.zip");
 			saveHashMap(spamWords, "spamwords.ser");
@@ -45,18 +48,19 @@ public class Bayes {
 			spamWords = loadHashMap("spamwords.ser");
 		}
 		
-		/*
-	    System.out.println("---------- Ham Words --------------");
-	    for (Map.Entry entry : hamWords.entrySet()){
-	    	  System.out.println(entry.getKey() + " " + entry.getValue());
-	    }
-	    System.out.println("----------- Word Count: " + spamWords.size());
-	    System.out.println("---------- Spam Words --------------");
-	    for (Map.Entry entry : spamWords.entrySet()){
-	    	  System.out.println(entry.getKey() + " " + entry.getValue());
-	    }
-	    System.out.println("----------- Word Count: " + spamWords.size());
-	    */
+		
+//	    System.out.println("---------- Ham Words --------------");
+//	    for (Map.Entry entry : hamWords.entrySet()){
+//	    	  System.out.println(entry.getKey() + " " + entry.getValue());
+//	    }
+//	    System.out.println("----------- Word Count: " + spamWords.size());
+//	    System.out.println("---------- Spam Words --------------");
+//	    for (Map.Entry entry : spamWords.entrySet()){
+//	    	  System.out.println(entry.getKey() + " " + entry.getValue());
+//	    }
+//	    System.out.println("----------- Word Count: " + spamWords.size());
+
+	    
 	}
 	
 	/**
@@ -79,6 +83,7 @@ public class Bayes {
 	/**
 	 * Deserialize Hashmap from file
 	 */
+	@SuppressWarnings({ "unchecked", "rawtypes" })
 	private static HashMap<String, Integer> loadHashMap(String filename) {
 		HashMap<String, Integer> map = null;
 		try
@@ -98,6 +103,15 @@ public class Bayes {
 	}
 	
 	/**
+	 * Count Mails
+	 */
+	private static int countWords(String filename) throws IOException {
+		try(ZipFile file = new ZipFile(filename)){
+			return file.size();
+		}
+	}
+	
+	/**
 	 * Creates word list of a zip file
 	 * @param zipfile path 
 	 * @return HashMap<String, Integer> -- Word, Count
@@ -105,30 +119,54 @@ public class Bayes {
 	 */
 	private static HashMap<String, Integer> createWordList(String filename) throws IOException {
 		HashMap<String, Integer> wordCount = new HashMap<>();
-		ZipFile file = new ZipFile(filename);
-		Enumeration<? extends ZipEntry> zipEntries = file.entries();
-
-		while(zipEntries.hasMoreElements()){
-			ZipEntry entry = zipEntries.nextElement();
-			BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream(entry), "UTF-8"));
-
-			String line = "";
-			while ((line = reader.readLine()) != null) {
-				// String[] words = line.toLowerCase().split("\\b");
-				String[] words = line.toLowerCase().split("[^a-zA-Z]+");
+		try(ZipFile file = new ZipFile(filename)){
+			Enumeration<? extends ZipEntry> zipEntries = file.entries();
 			
-				for (int i = 0; i < words.length; i++) {
-					if (wordCount.containsKey(words[i])) { 
-					  int n = wordCount.get(words[i]);    
-					  wordCount.put(words[i], ++n);
+			while(zipEntries.hasMoreElements()){
+				ZipEntry entry = zipEntries.nextElement();
+				InputStream fileInputStream = file.getInputStream(entry);
+				Set<String> wordSetMail = countWords(fileInputStream);
+				for(String word : wordSetMail){
+					if (wordCount.containsKey(word)) { 
+						int n = wordCount.get(word);    
+						wordCount.put(word, ++n);
 					}
 					else {
-					  wordCount.put(words[i], 1);
+						wordCount.put(word, 1);
 					}
 				}
 			}
 		}
 		return wordCount;
 	}
+
+	/**
+	 * Count words in given file stream. Same word is only counted once
+	 * @param fileInputStream
+	 * @return List of all words in given file. Only counted once
+	 * @throws UnsupportedEncodingException
+	 * @throws IOException
+	 */
+	protected static Set<String> countWords(InputStream fileInputStream)
+			throws UnsupportedEncodingException, IOException {
+		BufferedReader reader = new BufferedReader(new InputStreamReader(fileInputStream, "UTF-8"));
+		
+		Set<String> wordSet = new HashSet<>();
+		String line = "";
+		while ((line = reader.readLine()) != null) {
+			// String[] words = line.toLowerCase().split("\\b");
+			String[] words = line.toLowerCase().split("[^a-zA-Z]+");
+			
+			for (int i = 0; i < words.length; i++) {
+				String w = words[i];
+				if(w != null && !w.trim().isEmpty()){
+					wordSet.add(w);
+				}
+			}
+		}
+		return wordSet;
+	}
+	
+	
 
 }

@@ -2,6 +2,7 @@ package ch.fhnw.dist.bayes.filter;
 
 import static org.junit.Assert.assertEquals;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -32,18 +33,18 @@ public class TestSpamProbabilityCalculator {
 	
 	@Test
 	public void testLearnWords(){
-		Map<String, Double> hamProb = calc.getHamProbability();
-		Map<String, Double> spamProb = calc.getSpamProbability();
-		assertEquals(0.3, hamProb.get("haben"), 0);
-		assertEquals(0.03, hamProb.get("online"), 0);
-		assertEquals(0.07, spamProb.get("haben"), 0);
-		assertEquals(0.08, spamProb.get("online"), 0);
+		Map<String, BigDecimal> hamProb = calc.getHamProbability();
+		Map<String, BigDecimal> spamProb = calc.getSpamProbability();
+		assertEquals(0.3, hamProb.get("haben").doubleValue(), 0);
+		assertEquals(0.03, hamProb.get("online").doubleValue(), 0);
+		assertEquals(0.07, spamProb.get("haben").doubleValue(), 0);
+		assertEquals(0.08, spamProb.get("online").doubleValue(), 0);
 	}
 	
 	@Test
 	public void testSpamCalculateProbability(){
-		String mail = "haben online";
-		double prob = calc.calculateSpamProbability(mail);
+		String[] mailWords = new String[]{"haben","online"};
+		double prob = calc.calculateSpamProbability(mailWords);
 		assertEquals(0.38, prob, 0.01);
 	}
 }
