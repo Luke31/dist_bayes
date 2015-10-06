@@ -23,6 +23,7 @@ public class Bayes {
 	protected static HashMap<String, Integer> spamWords = null;
 	protected static int hamMailCount = 0;
 	protected static int spamMailCount = 0;
+	private final static boolean CACHE_TRAINING = false;
 	
 	/**
 	 * Train --> create Wordlist
@@ -32,7 +33,7 @@ public class Bayes {
 		
 		File f = new File("hamwords.ser");
 		hamMailCount = countWords("res/ham-anlern.zip"); //TODO: Nur einmal laden?
-		if(!f.exists()) { 
+		if(!f.exists() || !CACHE_TRAINING) { 
 			hamWords = createWordList("res/ham-anlern.zip");
 			saveHashMap(hamWords, "hamwords.ser");
 		} else {
@@ -41,7 +42,7 @@ public class Bayes {
 		
 		f = new File("spamwords.ser");
 		spamMailCount = countWords("res/spam-anlern.zip");//TODO: Nur einmal laden?
-		if(!f.exists()) { 
+		if(!f.exists() || !CACHE_TRAINING) { 
 			spamWords = createWordList("res/spam-anlern.zip");
 			saveHashMap(spamWords, "spamwords.ser");
 		} else {
@@ -153,16 +154,31 @@ public class Bayes {
 		
 		Set<String> wordSet = new HashSet<>();
 		String line = "";
+		int newLines = 0; //E-Mail Body starts with \n\n\n
+		Boolean bodyReached = false;
 		while ((line = reader.readLine()) != null) {
-			// String[] words = line.toLowerCase().split("\\b");
-			String[] words = line.toLowerCase().split("[^a-zA-Z]+");
-			
-			for (int i = 0; i < words.length; i++) {
-				String w = words[i];
-				if(w != null && !w.trim().isEmpty()){
-					wordSet.add(w);
+			if(bodyReached){
+				// String[] words = line.toLowerCase().split("\\b");
+				String[] words = line.toLowerCase().split("[^a-zA-Z]+");
+				
+				for (int i = 0; i < words.length; i++) {
+					String w = words[i];
+					if(w != null && !w.trim().isEmpty()){
+						wordSet.add(w);
+					}
 				}
 			}
+			
+			if(!bodyReached && "".equals(line)){
+				newLines++;
+				if(newLines == 2){
+					bodyReached = true;
+				}
+			}else{
+				newLines = 0;
+			}
+			
+			
 		}
 		return wordSet;
 	}

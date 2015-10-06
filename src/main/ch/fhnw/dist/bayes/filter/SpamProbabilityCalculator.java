@@ -5,6 +5,7 @@ import java.math.MathContext;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 /**
  * Calculates the spam probability of a given Mail-String.
@@ -14,14 +15,14 @@ import java.util.Map.Entry;
  */
 public class SpamProbabilityCalculator {	
 	private final static int NEUT_ELEM_MULT = 1;
-	private final static double LOW_COUNT_ALPHA = 0.5; //Gleich wie P(S) und P(S)
-	private final static double SCHWELLENWERT = 0.5; //P(S) und P(S)
+	private final static double LOW_COUNT_ALPHA = 0.00001; //Gleich wie P(S) und P(S)
+	public final static double SCHWELLENWERT = 0.5; //P(S) und P(S)
 	private final static MathContext MATHCONTEXT = new MathContext(100);
 	
 	//Counts
-	private BigDecimal totalHamMails;
+	private BigDecimal totalHamMails; //1151 anlern
 	private Map<String, BigDecimal> hamWords;
-	private BigDecimal totalSpamMails;
+	private BigDecimal totalSpamMails; //249 anlern
 	private Map<String, BigDecimal> spamWords;
 	
 	//Probabilities
@@ -34,6 +35,9 @@ public class SpamProbabilityCalculator {
 		this.totalHamMails = new BigDecimal(totalHamMails);
 		this.totalSpamMails = new BigDecimal(totalSpamMails);
 		
+		this.hamWords = new HashMap<>();
+		this.spamWords = new HashMap<>();
+		
 		addWordsInclViceVersa(hamWords, spamWords);
 		learnWords();
 	}
@@ -45,20 +49,46 @@ public class SpamProbabilityCalculator {
 	 * @param intSpamWords
 	 */
 	private void addWordsInclViceVersa(Map<String, Integer> intHamWords, Map<String, Integer> intSpamWords){
-		this.hamWords = new HashMap<>();
-		this.spamWords = new HashMap<>();
+		
 		for(Entry<String, Integer> e : intHamWords.entrySet()){
-			hamWords.put(e.getKey(), new BigDecimal(e.getValue()));
+			if(!hamWords.containsKey(e.getKey())){
+				hamWords.put(e.getKey(), new BigDecimal(e.getValue()));
+			}else{ //Add count to existing
+				hamWords.put(e.getKey(), hamWords.get(e.getKey()).add(new BigDecimal(e.getValue())));
+			}
+				
 			if(!intSpamWords.containsKey(e.getKey())){
 				spamWords.put(e.getKey(), new BigDecimal(LOW_COUNT_ALPHA));
 			}
 		}
 		for(Entry<String, Integer> e : intSpamWords.entrySet()){
-			spamWords.put(e.getKey(), new BigDecimal(e.getValue()));
+			if(!spamWords.containsKey(e.getKey())){
+				spamWords.put(e.getKey(), new BigDecimal(e.getValue()));
+			}else{ //Add count to existing
+				spamWords.put(e.getKey(), spamWords.get(e.getKey()).add(new BigDecimal(e.getValue())));
+			}
 			if(!intHamWords.containsKey(e.getKey())){
 				hamWords.put(e.getKey(), new BigDecimal(LOW_COUNT_ALPHA));
 			}
 		}
+	}
+	
+	public void learnFromNewMail(Set<String> words, Boolean spam){
+		HashMap<String, Integer> intHamWords = new HashMap<>();
+		HashMap<String, Integer> intSpamWords = new HashMap<>();
+		if(spam){ //Spam
+			totalSpamMails.add(new BigDecimal(1));
+			for(String w : words){
+				intSpamWords.put(w, 1);
+			}
+		}else{ //Ham
+			totalHamMails.add(new BigDecimal(1));
+			for(String w : words){
+				intHamWords.put(w, 1);
+			}
+		}
+		addWordsInclViceVersa(intHamWords, intSpamWords);
+		learnWords();
 	}
 
 	/**
@@ -77,6 +107,8 @@ public class SpamProbabilityCalculator {
 		}
 	}
 	
+//	public void learnNewWords()
+	
 	/**
 	 * Calculates the spam-probability for the given mail-string
 	 * @param mail
@@ -84,7 +116,6 @@ public class SpamProbabilityCalculator {
 	 */
 	public double calculateSpamProbability(String[] mailWords){		
 		return calculateSpamProbOfWords(mailWords);
-		//TODO: learn as new word
 	}
 	
 	public boolean isSpam(String[] mailWords){
