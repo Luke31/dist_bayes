@@ -16,18 +16,18 @@ import java.util.zip.ZipFile;
 public class Bayes {
 
 
-	public static void main(String[] args) throws IOException {
-	    train();
-	}
+//	public static void main(String[] args) throws IOException {
+//	    train();
+//	}
 	
-	private static HashMap<String, Integer> hamWords = null;
-	private static HashMap<String, Integer> spamWords = null;
+	protected static HashMap<String, Integer> hamWords = null;
+	protected static HashMap<String, Integer> spamWords = null;
 	
 	/**
 	 * Train --> create Wordlist
 	 * @throws IOException
 	 */
-	private static void train() throws IOException {
+	protected static void train() throws IOException {
 		
 		File f = new File("hamwords.ser");
 		if(!f.exists()) { 
