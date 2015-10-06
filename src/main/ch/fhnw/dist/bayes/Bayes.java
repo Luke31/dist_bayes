@@ -1,4 +1,4 @@
-package ch.fhnw.dist;
+package ch.fhnw.dist.bayes;
 
 import java.io.BufferedReader;
 import java.io.File;
