@@ -29,7 +29,7 @@ public class Bayes {
 	 */
 	private static void train() throws IOException {
 		
-		File f = new File("res/ham-anlern.zip");
+		File f = new File("hamwords.ser");
 		if(!f.exists()) { 
 			hamWords = createWordList("res/ham-anlern.zip");
 			saveHashMap(hamWords, "hamwords.ser");
@@ -37,7 +37,7 @@ public class Bayes {
 			hamWords = loadHashMap("hamwords.ser");
 		}
 		
-		f = new File("res/ham-anlern.zip");
+		f = new File("spamwords.ser");
 		if(!f.exists()) { 
 			spamWords = createWordList("res/spam-anlern.zip");
 			saveHashMap(spamWords, "spamwords.ser");
