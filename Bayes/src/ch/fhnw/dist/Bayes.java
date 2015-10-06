@@ -34,7 +34,7 @@ public class Bayes {
 			hamWords = createWordList("res/ham-anlern.zip");
 			saveHashMap(hamWords, "hamwords.ser");
 		} else {
-			loadHashMap("hamwords.ser");
+			hamWords = loadHashMap("hamwords.ser");
 		}
 		
 		f = new File("res/ham-anlern.zip");
@@ -42,7 +42,7 @@ public class Bayes {
 			spamWords = createWordList("res/spam-anlern.zip");
 			saveHashMap(spamWords, "spamwords.ser");
 		} else {
-			loadHashMap("spamwords.ser");
+			spamWords = loadHashMap("spamwords.ser");
 		}
 		
 		/*
