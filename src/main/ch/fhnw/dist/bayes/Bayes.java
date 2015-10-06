@@ -10,6 +10,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -22,6 +23,8 @@ public class Bayes {
 	
 	private static HashMap<String, Integer> hamWords = null;
 	private static HashMap<String, Integer> spamWords = null;
+	protected static int hamMailCount = 0;
+	protected static int spamMailCount = 0;
 	
 	/**
 	 * Train --> create Wordlist
@@ -32,6 +35,7 @@ public class Bayes {
 		File f = new File("hamwords.ser");
 		if(!f.exists()) { 
 			hamWords = createWordList("res/ham-anlern.zip");
+			hamMailCount = countWords("res/ham-anlern.zip");
 			saveHashMap(hamWords, "hamwords.ser");
 		} else {
 			hamWords = loadHashMap("hamwords.ser");
@@ -40,6 +44,7 @@ public class Bayes {
 		f = new File("spamwords.ser");
 		if(!f.exists()) { 
 			spamWords = createWordList("res/spam-anlern.zip");
+			spamMailCount = countWords("res/spam-anlern.zip");
 			saveHashMap(spamWords, "spamwords.ser");
 		} else {
 			spamWords = loadHashMap("spamwords.ser");
@@ -57,6 +62,7 @@ public class Bayes {
 	    }
 	    System.out.println("----------- Word Count: " + spamWords.size());
 	    */
+	    
 	}
 	
 	/**
@@ -98,6 +104,14 @@ public class Bayes {
 	}
 	
 	/**
+	 * Count Mails
+	 */
+	private static int countWords(String filename) throws IOException {
+		ZipFile file = new ZipFile(filename);
+		return file.size();
+	}
+	
+	/**
 	 * Creates word list of a zip file
 	 * @param zipfile path 
 	 * @return HashMap<String, Integer> -- Word, Count
@@ -107,7 +121,7 @@ public class Bayes {
 		HashMap<String, Integer> wordCount = new HashMap<>();
 		ZipFile file = new ZipFile(filename);
 		Enumeration<? extends ZipEntry> zipEntries = file.entries();
-
+		
 		while(zipEntries.hasMoreElements()){
 			ZipEntry entry = zipEntries.nextElement();
 			BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream(entry), "UTF-8"));
