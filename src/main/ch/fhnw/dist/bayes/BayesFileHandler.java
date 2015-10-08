@@ -17,33 +17,41 @@ import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-public class Bayes {
+/**
+ * File-Handler and word-counting class
+ * @author Lukas Schmid, Andreas Gloor
+ */
+public class BayesFileHandler {
 
-	protected static HashMap<String, Integer> hamWords = null;
-	protected static HashMap<String, Integer> spamWords = null;
-	protected static int hamMailCount = 0;
-	protected static int spamMailCount = 0;
-	private final static boolean CACHE_TRAINING = false;
+	protected HashMap<String, Integer> hamWords = null;
+	protected HashMap<String, Integer> spamWords = null;
+	protected int hamMailCount = 0;
+	protected int spamMailCount = 0;
+	protected String hamZipPath = null;
+	protected String spamZipPath = null;
 	
 	/**
 	 * Train --> create Wordlist
+	 * @param cache True if trained data shall be cached
 	 * @throws IOException
 	 */
-	protected static void train() throws IOException {
+	protected void loadTrainFiles(boolean cache) throws IOException {
+		hamZipPath = "res/ham-anlern.zip";
+		spamZipPath = "res/spam-anlern.zip";
 		
 		File f = new File("hamwords.ser");
-		hamMailCount = countWords("res/ham-anlern.zip"); //TODO: Nur einmal laden?
-		if(!f.exists() || !CACHE_TRAINING) { 
-			hamWords = createWordList("res/ham-anlern.zip");
+		hamMailCount = countMails(hamZipPath);
+		if(!f.exists() || !cache) { 
+			hamWords = createWordList(hamZipPath);
 			saveHashMap(hamWords, "hamwords.ser");
 		} else {
 			hamWords = loadHashMap("hamwords.ser");
 		}
 		
 		f = new File("spamwords.ser");
-		spamMailCount = countWords("res/spam-anlern.zip");//TODO: Nur einmal laden?
-		if(!f.exists() || !CACHE_TRAINING) { 
-			spamWords = createWordList("res/spam-anlern.zip");
+		spamMailCount = countMails(spamZipPath);
+		if(!f.exists() || !cache) { 
+			spamWords = createWordList(spamZipPath);
 			saveHashMap(spamWords, "spamwords.ser");
 		} else {
 			spamWords = loadHashMap("spamwords.ser");
@@ -65,11 +73,36 @@ public class Bayes {
 	}
 	
 	/**
+	 * Load calibration files
+	 * @throws IOException
+	 */
+	protected void loadCalibrationFiles() throws IOException {
+		hamZipPath = "res/ham-kallibrierung.zip";
+		spamZipPath = "res/spam-kallibrierung.zip";
+		
+		hamMailCount = countMails(hamZipPath);
+		spamMailCount = countMails(spamZipPath);
+	}
+	
+	/**
+	 * Load test files
+	 * @throws IOException
+	 */
+	protected void loadTestFiles() throws IOException {
+		hamZipPath = "res/ham-test.zip";
+		spamZipPath = "res/spam-test.zip";
+		
+		hamMailCount = countMails(hamZipPath);
+		spamMailCount = countMails(spamZipPath);
+	}
+	
+	
+	/**
 	 * Serialize Hashmap to File
 	 * @param map
 	 * @param filename
 	 */
-	private static void saveHashMap(HashMap<String, Integer> map, String name) {
+	private void saveHashMap(HashMap<String, Integer> map, String name) {
 		try {
 			FileOutputStream fos = new FileOutputStream(name);
 			ObjectOutputStream oos = new ObjectOutputStream(fos);
@@ -85,7 +118,7 @@ public class Bayes {
 	 * Deserialize Hashmap from file
 	 */
 	@SuppressWarnings({ "unchecked", "rawtypes" })
-	private static HashMap<String, Integer> loadHashMap(String filename) {
+	private HashMap<String, Integer> loadHashMap(String filename) {
 		HashMap<String, Integer> map = null;
 		try
 		{
@@ -106,7 +139,7 @@ public class Bayes {
 	/**
 	 * Count Mails
 	 */
-	private static int countWords(String filename) throws IOException {
+	private int countMails(String filename) throws IOException {
 		try(ZipFile file = new ZipFile(filename)){
 			return file.size();
 		}
@@ -118,7 +151,7 @@ public class Bayes {
 	 * @return HashMap<String, Integer> -- Word, Count
 	 * @throws IOException
 	 */
-	private static HashMap<String, Integer> createWordList(String filename) throws IOException {
+	private HashMap<String, Integer> createWordList(String filename) throws IOException {
 		HashMap<String, Integer> wordCount = new HashMap<>();
 		try(ZipFile file = new ZipFile(filename)){
 			Enumeration<? extends ZipEntry> zipEntries = file.entries();
@@ -126,7 +159,7 @@ public class Bayes {
 			while(zipEntries.hasMoreElements()){
 				ZipEntry entry = zipEntries.nextElement();
 				InputStream fileInputStream = file.getInputStream(entry);
-				Set<String> wordSetMail = countWords(fileInputStream);
+				String[] wordSetMail = countWords(fileInputStream);
 				for(String word : wordSetMail){
 					if (wordCount.containsKey(word)) { 
 						int n = wordCount.get(word);    
@@ -148,17 +181,16 @@ public class Bayes {
 	 * @throws UnsupportedEncodingException
 	 * @throws IOException
 	 */
-	protected static Set<String> countWords(InputStream fileInputStream)
+	protected String[] countWords(InputStream fileInputStream)
 			throws UnsupportedEncodingException, IOException {
 		BufferedReader reader = new BufferedReader(new InputStreamReader(fileInputStream, "UTF-8"));
 		
 		Set<String> wordSet = new HashSet<>();
 		String line = "";
-		int newLines = 0; //E-Mail Body starts with \n\n\n
+		int newLines = 0; //E-Mail Body starts with \n\n
 		Boolean bodyReached = false;
 		while ((line = reader.readLine()) != null) {
 			if(bodyReached){
-				// String[] words = line.toLowerCase().split("\\b");
 				String[] words = line.toLowerCase().split("[^a-zA-Z]+");
 				
 				for (int i = 0; i < words.length; i++) {
@@ -171,7 +203,7 @@ public class Bayes {
 			
 			if(!bodyReached && "".equals(line)){
 				newLines++;
-				if(newLines == 2){
+				if(newLines == 1){
 					bodyReached = true;
 				}
 			}else{
@@ -180,7 +212,7 @@ public class Bayes {
 			
 			
 		}
-		return wordSet;
+		return wordSet.toArray(new String[wordSet.size()]);
 	}
 	
 	

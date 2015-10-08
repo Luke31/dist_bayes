@@ -10,6 +10,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import ch.fhnw.dist.bayes.SpamProbabilityCalculator;
+
 public class TestSpamProbabilityCalculator {
 	
 	Map<String, Integer> hamWords = new HashMap<>();
@@ -22,7 +24,7 @@ public class TestSpamProbabilityCalculator {
 		hamWords.put("online", 3);
 		spamWords.put("haben", 7);
 		spamWords.put("online", 8);
-		calc = new SpamProbabilityCalculator(100, hamWords, 100, spamWords);
+		calc = new SpamProbabilityCalculator(100, hamWords, 100, spamWords, 0.5, 0.001);
     }
 	
 	@After

@@ -1,42 +1,52 @@
-package ch.fhnw.dist.bayes.filter;
+package ch.fhnw.dist.bayes;
 
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 
 /**
  * Calculates the spam probability of a given Mail-String.
  * Learns using given Maps of Spam-and Ham-Words.
  * Help for implementation: http://www.math.kit.edu/ianm4/~ritterbusch/seite/spam/de
- * @author Lukas Schmid
+ * @author Lukas Schmid, Andreas Gloor
  */
 public class SpamProbabilityCalculator {	
 	private final static int NEUT_ELEM_MULT = 1;
-	private final static double LOW_COUNT_ALPHA = 0.00001; //Gleich wie P(S) und P(S)
-	public final static double SCHWELLENWERT = 0.5; //P(S) und P(S)
+	private double schwellenwert = 0.5; //P(S) und P(S)
+	private double alpha = 0.001; //Gleich wie P(S) und P(S)
 	private final static MathContext MATHCONTEXT = new MathContext(100);
 	
 	//Counts
-	private BigDecimal totalHamMails; //1151 anlern
+	private BigDecimal totalHamMails;
 	private Map<String, BigDecimal> hamWords;
-	private BigDecimal totalSpamMails; //249 anlern
+	private BigDecimal totalSpamMails;
 	private Map<String, BigDecimal> spamWords;
 	
 	//Probabilities
 	private Map<String, BigDecimal> hamProbability; //P("word" | H)
 	private Map<String, BigDecimal> spamProbability; //P("word" | S)
 	
+	/**
+	 * @param totalHamMails total ham-words to learn
+	 * @param hamWords ham-words to learn
+	 * @param totalSpamMails total spam-words to learn
+	 * @param spamWords spam-words to learn
+	 * @param schwellenwert Probabilities higher than this threshold are considered spam
+	 * @param alpha Value used for vice-versa adding of unknown words
+	 */
 	public SpamProbabilityCalculator(Integer totalHamMails, Map<String, Integer> hamWords, Integer totalSpamMails,
-			Map<String, Integer> spamWords) {
+			Map<String, Integer> spamWords, double schwellenwert, double alpha) {
 		super();
 		this.totalHamMails = new BigDecimal(totalHamMails);
 		this.totalSpamMails = new BigDecimal(totalSpamMails);
 		
 		this.hamWords = new HashMap<>();
 		this.spamWords = new HashMap<>();
+		
+		this.schwellenwert = schwellenwert;
+		this.alpha = alpha;
 		
 		addWordsInclViceVersa(hamWords, spamWords);
 		learnWords();
@@ -57,8 +67,8 @@ public class SpamProbabilityCalculator {
 				hamWords.put(e.getKey(), hamWords.get(e.getKey()).add(new BigDecimal(e.getValue())));
 			}
 				
-			if(!intSpamWords.containsKey(e.getKey())){
-				spamWords.put(e.getKey(), new BigDecimal(LOW_COUNT_ALPHA));
+			if(!intSpamWords.containsKey(e.getKey()) && !spamWords.containsKey(e.getKey())){
+				spamWords.put(e.getKey(), new BigDecimal(alpha));
 			}
 		}
 		for(Entry<String, Integer> e : intSpamWords.entrySet()){
@@ -67,13 +77,18 @@ public class SpamProbabilityCalculator {
 			}else{ //Add count to existing
 				spamWords.put(e.getKey(), spamWords.get(e.getKey()).add(new BigDecimal(e.getValue())));
 			}
-			if(!intHamWords.containsKey(e.getKey())){
-				hamWords.put(e.getKey(), new BigDecimal(LOW_COUNT_ALPHA));
+			if(!intHamWords.containsKey(e.getKey()) && !hamWords.containsKey(e.getKey())){
+				hamWords.put(e.getKey(), new BigDecimal(alpha));
 			}
 		}
 	}
 	
-	public void learnFromNewMail(Set<String> words, Boolean spam){
+	/**
+	 * Improve Filter-accuracy by providing words, which stem from a spam or ham mail.
+	 * @param words Words occuring in provided mail
+	 * @param spam Are provided words spam-words? (false is treated as ham)
+	 */
+	public void learnFromNewMail(String[] words, Boolean spam){
 		HashMap<String, Integer> intHamWords = new HashMap<>();
 		HashMap<String, Integer> intSpamWords = new HashMap<>();
 		if(spam){ //Spam
@@ -107,8 +122,6 @@ public class SpamProbabilityCalculator {
 		}
 	}
 	
-//	public void learnNewWords()
-	
 	/**
 	 * Calculates the spam-probability for the given mail-string
 	 * @param mail
@@ -118,8 +131,13 @@ public class SpamProbabilityCalculator {
 		return calculateSpamProbOfWords(mailWords);
 	}
 	
+	/**
+	 * Determine if provided mail is spam depending on given threshold
+	 * @param mailWords
+	 * @return True if mail is considered as spam
+	 */
 	public boolean isSpam(String[] mailWords){
-		return calculateSpamProbability(mailWords) > SCHWELLENWERT;
+		return calculateSpamProbability(mailWords) > schwellenwert;
 	}
 	
 	/**
@@ -155,13 +173,23 @@ public class SpamProbabilityCalculator {
 	public Map<String, BigDecimal> getSpamProbability() {
 		return spamProbability;
 	}
+
+	public double getAlpha() {
+		return alpha;
+	}
+
+	public void setAlpha(double alpha) {
+		this.alpha = alpha;
+	}
+
+	public double getSchwellenwert() {
+		return schwellenwert;
+	}
+
+	public void setSchwellenwert(double schwellenwert) {
+		this.schwellenwert = schwellenwert;
+	}
 	
-//	private boolean isValidWord(String w){
-//		if(w == null || w.trim().isEmpty()){
-//			return false;
-//		}else{
-//			return true;
-//		}
-//	}
+	
 }
 
